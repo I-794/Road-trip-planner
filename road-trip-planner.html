@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Road Trip Planner</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: #f5f5f5;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        #map {
+            flex: 1;
+            height: 100%;
+        }
+
+        .sidebar {
+            width: 320px;
+            background: white;
+            padding: 20px;
+            overflow-y: auto;
+            box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+        }
+
+        .control-section {
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .control-section:last-child {
+            border-bottom: none;
+        }
+
+        h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .btn-danger {
+            background: #ff4757;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #ff3838;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 71, 87, 0.4);
+        }
+
+        .info-box {
+            background: #f8f9ff;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+        }
+
+        .info-box strong {
+            display: block;
+            margin-bottom: 8px;
+            color: #667eea;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .info-box .value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .waypoint-list {
+            list-style: none;
+            margin-bottom: 10px;
+        }
+
+        .waypoint-item {
+            background: #f8f9ff;
+            padding: 12px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 3px solid #667eea;
+        }
+
+        .waypoint-info {
+            flex: 1;
+        }
+
+        .waypoint-number {
+            font-weight: bold;
+            color: #667eea;
+            margin-right: 8px;
+        }
+
+        .waypoint-coords {
+            font-size: 11px;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        .remove-btn {
+            background: #ff4757;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+
+        .remove-btn:hover {
+            background: #ff3838;
+        }
+
+        .poi-list {
+            list-style: none;
+        }
+
+        .poi-item {
+            background: #fff5e6;
+            padding: 12px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            border-left: 3px solid #ffa502;
+        }
+
+        .poi-name {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .poi-coords {
+            font-size: 11px;
+            color: #666;
+        }
+
+        .input-group {
+            margin-bottom: 10px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .mode-indicator {
+            background: #ffa502;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 12px;
+            margin-bottom: 10px;
+            display: none;
+        }
+
+        .mode-indicator.active {
+            display: block;
+        }
+
+        .icon {
+            font-size: 18px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                max-height: 40%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🗺️ Road Trip Planner</h1>
+        <p class="subtitle">Plan your journey with interactive route mapping and points of interest</p>
+    </header>
+
+    <div class="container">
+        <div id="map"></div>
+
+        <div class="sidebar">
+            <div class="control-section">
+                <h3><span class="icon">🚗</span> Route Planning</h3>
+                <div class="mode-indicator" id="waypointMode">Click on map to add waypoints</div>
+                <button class="btn btn-primary" id="addWaypointBtn">Add Waypoint Mode</button>
+                <button class="btn btn-secondary" id="cancelWaypointBtn" style="display: none;">Cancel</button>
+
+                <div class="info-box">
+                    <strong>Total Distance</strong>
+                    <div class="value" id="totalDistance">0 km</div>
+                </div>
+
+                <ul class="waypoint-list" id="waypointList"></ul>
+
+                <button class="btn btn-danger" id="clearRouteBtn">Clear Route</button>
+            </div>
+
+            <div class="control-section">
+                <h3><span class="icon">📍</span> Points of Interest</h3>
+                <div class="mode-indicator" id="poiMode">Click on map to add POI</div>
+
+                <div class="input-group">
+                    <input type="text" id="poiNameInput" placeholder="POI Name (e.g., Grand Canyon)">
+                </div>
+
+                <button class="btn btn-primary" id="addPOIBtn">Add POI Mode</button>
+                <button class="btn btn-secondary" id="cancelPOIBtn" style="display: none;">Cancel</button>
+
+                <ul class="poi-list" id="poiList"></ul>
+
+                <button class="btn btn-danger" id="clearPOIBtn">Clear All POIs</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize map centered on USA
+        const map = L.map('map').setView([39.8283, -98.5795], 4);
+
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 18
+        }).addTo(map);
+
+        // Data storage
+        let waypoints = [];
+        let waypointMarkers = [];
+        let routePolyline = null;
+        let pois = [];
+        let poiMarkers = [];
+        let addingWaypoint = false;
+        let addingPOI = false;
+
+        // UI Elements
+        const addWaypointBtn = document.getElementById('addWaypointBtn');
+        const cancelWaypointBtn = document.getElementById('cancelWaypointBtn');
+        const waypointModeIndicator = document.getElementById('waypointMode');
+        const clearRouteBtn = document.getElementById('clearRouteBtn');
+        const waypointList = document.getElementById('waypointList');
+        const totalDistanceEl = document.getElementById('totalDistance');
+
+        const addPOIBtn = document.getElementById('addPOIBtn');
+        const cancelPOIBtn = document.getElementById('cancelPOIBtn');
+        const poiModeIndicator = document.getElementById('poiMode');
+        const poiNameInput = document.getElementById('poiNameInput');
+        const clearPOIBtn = document.getElementById('clearPOIBtn');
+        const poiList = document.getElementById('poiList');
+
+        // Haversine formula for distance calculation
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Earth's radius in kilometers
+            const dLat = toRadians(lat2 - lat1);
+            const dLon = toRadians(lon2 - lon1);
+
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                      Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
+                      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            const distance = R * c;
+
+            return distance;
+        }
+
+        function toRadians(degrees) {
+            return degrees * (Math.PI / 180);
+        }
+
+        // Calculate total route distance
+        function calculateTotalDistance() {
+            let total = 0;
+            for (let i = 0; i < waypoints.length - 1; i++) {
+                const dist = calculateDistance(
+                    waypoints[i].lat,
+                    waypoints[i].lng,
+                    waypoints[i + 1].lat,
+                    waypoints[i + 1].lng
+                );
+                total += dist;
+            }
+            return total;
+        }
+
+        // Update distance display
+        function updateDistanceDisplay() {
+            const distance = calculateTotalDistance();
+            const miles = distance * 0.621371;
+            totalDistanceEl.textContent = `${distance.toFixed(2)} km / ${miles.toFixed(2)} mi`;
+        }
+
+        // Draw route on map
+        function drawRoute() {
+            if (routePolyline) {
+                map.removeLayer(routePolyline);
+            }
+
+            if (waypoints.length > 1) {
+                const latlngs = waypoints.map(wp => [wp.lat, wp.lng]);
+                routePolyline = L.polyline(latlngs, {
+                    color: '#667eea',
+                    weight: 4,
+                    opacity: 0.7
+                }).addTo(map);
+            }
+
+            updateDistanceDisplay();
+        }
+
+        // Add waypoint
+        function addWaypoint(lat, lng) {
+            waypoints.push({ lat, lng });
+
+            // Create marker
+            const markerIcon = L.divIcon({
+                className: 'custom-marker',
+                html: `<div style="background: #667eea; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">${waypoints.length}</div>`,
+                iconSize: [30, 30],
+                iconAnchor: [15, 15]
+            });
+
+            const marker = L.marker([lat, lng], { icon: markerIcon }).addTo(map);
+            marker.bindPopup(`<b>Waypoint ${waypoints.length}</b><br>Lat: ${lat.toFixed(4)}<br>Lng: ${lng.toFixed(4)}`);
+            waypointMarkers.push(marker);
+
+            updateWaypointList();
+            drawRoute();
+        }
+
+        // Update waypoint list UI
+        function updateWaypointList() {
+            waypointList.innerHTML = '';
+            waypoints.forEach((wp, index) => {
+                const li = document.createElement('li');
+                li.className = 'waypoint-item';
+                li.innerHTML = `
+                    <div class="waypoint-info">
+                        <div><span class="waypoint-number">#${index + 1}</span>Waypoint</div>
+                        <div class="waypoint-coords">${wp.lat.toFixed(4)}, ${wp.lng.toFixed(4)}</div>
+                    </div>
+                    <button class="remove-btn" onclick="removeWaypoint(${index})">Remove</button>
+                `;
+                waypointList.appendChild(li);
+            });
+        }
+
+        // Remove waypoint
+        function removeWaypoint(index) {
+            waypoints.splice(index, 1);
+            map.removeLayer(waypointMarkers[index]);
+            waypointMarkers.splice(index, 1);
+
+            // Update remaining markers
+            waypointMarkers.forEach((marker, i) => {
+                const newIcon = L.divIcon({
+                    className: 'custom-marker',
+                    html: `<div style="background: #667eea; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">${i + 1}</div>`,
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 15]
+                });
+                marker.setIcon(newIcon);
+                marker.setPopupContent(`<b>Waypoint ${i + 1}</b><br>Lat: ${waypoints[i].lat.toFixed(4)}<br>Lng: ${waypoints[i].lng.toFixed(4)}`);
+            });
+
+            updateWaypointList();
+            drawRoute();
+        }
+
+        // Clear all waypoints
+        function clearRoute() {
+            waypoints = [];
+            waypointMarkers.forEach(marker => map.removeLayer(marker));
+            waypointMarkers = [];
+            if (routePolyline) {
+                map.removeLayer(routePolyline);
+                routePolyline = null;
+            }
+            updateWaypointList();
+            updateDistanceDisplay();
+        }
+
+        // Add POI
+        function addPOI(lat, lng, name) {
+            if (!name || name.trim() === '') {
+                name = 'Point of Interest';
+            }
+
+            pois.push({ lat, lng, name });
+
+            const poiIcon = L.divIcon({
+                className: 'custom-poi',
+                html: `<div style="background: #ffa502; color: white; padding: 6px 12px; border-radius: 20px; font-weight: bold; white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,0.3); border: 2px solid white;">📍 ${name}</div>`,
+                iconSize: [null, null],
+                iconAnchor: [0, 15]
+            });
+
+            const marker = L.marker([lat, lng], { icon: poiIcon }).addTo(map);
+            marker.bindPopup(`<b>${name}</b><br>Lat: ${lat.toFixed(4)}<br>Lng: ${lng.toFixed(4)}`);
+            poiMarkers.push(marker);
+
+            updatePOIList();
+        }
+
+        // Update POI list UI
+        function updatePOIList() {
+            poiList.innerHTML = '';
+            pois.forEach((poi, index) => {
+                const li = document.createElement('li');
+                li.className = 'poi-item';
+                li.innerHTML = `
+                    <div class="poi-name">${poi.name}</div>
+                    <div class="poi-coords">${poi.lat.toFixed(4)}, ${poi.lng.toFixed(4)}</div>
+                    <button class="remove-btn" style="margin-top: 8px;" onclick="removePOI(${index})">Remove</button>
+                `;
+                poiList.appendChild(li);
+            });
+        }
+
+        // Remove POI
+        function removePOI(index) {
+            pois.splice(index, 1);
+            map.removeLayer(poiMarkers[index]);
+            poiMarkers.splice(index, 1);
+            updatePOIList();
+        }
+
+        // Clear all POIs
+        function clearAllPOIs() {
+            pois = [];
+            poiMarkers.forEach(marker => map.removeLayer(marker));
+            poiMarkers = [];
+            updatePOIList();
+        }
+
+        // Event Listeners
+        addWaypointBtn.addEventListener('click', () => {
+            addingWaypoint = true;
+            addingPOI = false;
+            addWaypointBtn.style.display = 'none';
+            cancelWaypointBtn.style.display = 'block';
+            waypointModeIndicator.classList.add('active');
+            poiModeIndicator.classList.remove('active');
+            map.getContainer().style.cursor = 'crosshair';
+        });
+
+        cancelWaypointBtn.addEventListener('click', () => {
+            addingWaypoint = false;
+            addWaypointBtn.style.display = 'block';
+            cancelWaypointBtn.style.display = 'none';
+            waypointModeIndicator.classList.remove('active');
+            map.getContainer().style.cursor = '';
+        });
+
+        addPOIBtn.addEventListener('click', () => {
+            addingPOI = true;
+            addingWaypoint = false;
+            addPOIBtn.style.display = 'none';
+            cancelPOIBtn.style.display = 'block';
+            poiModeIndicator.classList.add('active');
+            waypointModeIndicator.classList.remove('active');
+            map.getContainer().style.cursor = 'crosshair';
+        });
+
+        cancelPOIBtn.addEventListener('click', () => {
+            addingPOI = false;
+            addPOIBtn.style.display = 'block';
+            cancelPOIBtn.style.display = 'none';
+            poiModeIndicator.classList.remove('active');
+            map.getContainer().style.cursor = '';
+        });
+
+        clearRouteBtn.addEventListener('click', clearRoute);
+        clearPOIBtn.addEventListener('click', clearAllPOIs);
+
+        // Map click handler
+        map.on('click', (e) => {
+            if (addingWaypoint) {
+                addWaypoint(e.latlng.lat, e.latlng.lng);
+            } else if (addingPOI) {
+                const poiName = poiNameInput.value.trim();
+                addPOI(e.latlng.lat, e.latlng.lng, poiName);
+                poiNameInput.value = '';
+            }
+        });
+
+        // Make functions globally accessible
+        window.removeWaypoint = removeWaypoint;
+        window.removePOI = removePOI;
+    </script>
+</body>
+</html>
